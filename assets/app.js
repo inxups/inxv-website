@@ -24,6 +24,7 @@ const aliases = new Map([
   ['friends', 'links'],
 ]);
 const commands = ['help', 'ls', 'cd', 'cat', 'pwd', 'whoami', 'history', 'back', 'clear'];
+const promptClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 const commandHistory = [];
 let historyCursor = 0;
 let currentRoute = routeFromLocation();
@@ -37,37 +38,32 @@ app.innerHTML = `
         <span class="brand-divider">/</span>
         <span class="brand-detail">terminal</span>
       </div>
-      <div class="header-location">
-        <span>当前位置</span>
-        <span id="header-path">/</span>
-      </div>
     </header>
 
-    <main id="terminal-output" class="terminal-output" aria-live="polite" aria-label="终端输出"></main>
+    <main id="terminal-screen" class="terminal-output" aria-label="终端">
+      <div id="terminal-transcript" class="terminal-transcript" role="log" aria-live="polite" aria-label="终端输出"></div>
 
-    <footer class="command-dock">
-      <div id="shortcuts" class="shortcuts" aria-label="快捷命令"></div>
       <form id="command-form" class="command-form" autocomplete="off">
         <label class="prompt" for="command-input">
-          <span class="prompt-user">guest@inxv</span><span class="prompt-colon">:</span><span id="prompt-path" class="prompt-path">~</span>
+          <span id="prompt-time" class="prompt-time"></span>
+          <span class="prompt-identity"><span class="prompt-user">guest</span><span class="prompt-at">@</span><span class="prompt-host">inxv</span></span>
+          <span id="prompt-path" class="prompt-path">~</span>
         </label>
-        <span class="prompt-dollar" aria-hidden="true">$</span>
-        <input id="command-input" name="command" type="text" aria-label="输入终端命令" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" />
-        <button class="submit-button" type="submit" aria-label="执行命令">↵</button>
+        <div class="command-line">
+          <span class="prompt-symbol" aria-hidden="true">%</span>
+          <input id="command-input" name="command" type="text" aria-label="输入终端命令" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" />
+          <button class="submit-button" type="submit" aria-label="执行命令">↵</button>
+        </div>
       </form>
-      <div class="dock-meta">
-        <span><kbd>Tab</kbd> 补全 <span class="meta-divider">/</span> <kbd>↑</kbd><kbd>↓</kbd> 历史命令</span>
-        <span><kbd>Enter</kbd> 执行</span>
-      </div>
-    </footer>
+    </main>
   </div>
 `;
 
-const output = document.querySelector('#terminal-output');
+const terminal = document.querySelector('#terminal-screen');
+const output = document.querySelector('#terminal-transcript');
 const input = document.querySelector('#command-input');
-const shortcuts = document.querySelector('#shortcuts');
+const promptTime = document.querySelector('#prompt-time');
 const promptPath = document.querySelector('#prompt-path');
-const headerPath = document.querySelector('#header-path');
 
 if (!history.state?.inxv) {
   history.replaceState({ inxv: true, index: 0 }, '', location.href);
@@ -158,41 +154,19 @@ function displayPath(route) {
 }
 
 function updateShell() {
+  promptTime.textContent = promptClock.format(new Date());
   promptPath.textContent = displayPath(currentRoute);
-  headerPath.textContent = currentRoute ? `/${currentRoute}` : '/';
   document.title = currentRoute ? `${pages.get(currentRoute).title} | inxv` : 'inxv | terminal';
-  shortcuts.replaceChildren();
-
-  const suggestions = currentRoute
-    ? ['ls', 'cat README.md', 'cd ..', 'help']
-    : ['help', 'ls', 'cd about', 'cd projects', 'cd links'];
-
-  for (const suggestion of suggestions) {
-    shortcuts.append(commandButton(suggestion, suggestion, 'shortcut'));
-  }
 }
 
 function renderBoot(compact) {
   const block = element('section', compact ? 'boot boot-compact' : 'boot');
   if (compact) {
-    block.append(element('p', 'compact-message', '欢迎来到 inxv。输入 help 查看命令。'));
+    block.append(element('p', 'compact-message', siteContent.tagline));
   } else {
-    const hero = element('div', 'hero');
     const title = element('h1', 'wordmark', siteContent.name);
     title.append(element('span', 'wordmark-cursor', '_'));
-    hero.append(title);
-    hero.append(element('p', 'hero-tagline', siteContent.tagline));
-    const introduction = element('p', 'intro');
-    introduction.append('输入 ');
-    introduction.append(commandButton('help', 'help'));
-    introduction.append(' 查看命令，或选择目录进入页面。');
-    hero.append(introduction);
-    block.append(hero);
-
-    const directoryPanel = element('div', 'directory-panel');
-    directoryPanel.append(element('h2', 'directory-heading', '目录'));
-    directoryPanel.append(directoryListing());
-    block.append(directoryPanel);
+    block.append(title, element('p', 'hero-tagline', siteContent.tagline));
   }
 
   output.append(block);
@@ -204,7 +178,6 @@ function directoryListing() {
     const row = element('div', 'directory-row');
     row.append(commandButton(`${directory.route}/`, `cd ${directory.route}`, 'directory-command'));
     row.append(element('span', 'directory-description', directory.description));
-    row.append(element('span', 'directory-arrow', '↗'));
     list.append(row);
   }
   return list;
@@ -212,12 +185,17 @@ function directoryListing() {
 
 function appendCommand(command, route) {
   const line = element('div', 'command-echo');
-  const prompt = element('span', 'echo-prompt');
-  prompt.append(element('span', 'prompt-user', 'guest@inxv'));
-  prompt.append(element('span', 'prompt-colon', ':'));
+  const prompt = element('div', 'echo-prompt');
+  prompt.append(element('span', 'prompt-time', promptClock.format(new Date())));
+  prompt.append(' ');
+  prompt.append(element('span', 'prompt-user', 'guest'));
+  prompt.append(element('span', 'prompt-at', '@'));
+  prompt.append(element('span', 'prompt-host', 'inxv'));
+  prompt.append(' ');
   prompt.append(element('span', 'prompt-path', displayPath(route)));
-  prompt.append(element('span', 'prompt-dollar', ' $'));
-  line.append(prompt, element('span', 'echo-command', command));
+  const echoLine = element('div', 'echo-line');
+  echoLine.append(element('span', 'prompt-symbol', '%'), element('span', 'echo-command', command));
+  line.append(prompt, echoLine);
   output.append(line);
 }
 
@@ -447,6 +425,7 @@ function executeCommand(raw) {
       appendNotice(`${command}: 未知命令。输入 help 查看可用命令。`, true);
   }
 
+  promptTime.textContent = promptClock.format(new Date());
   scrollToLatest();
 }
 
@@ -480,6 +459,6 @@ function completeCommand() {
 
 function scrollToLatest() {
   requestAnimationFrame(() => {
-    output.scrollTop = output.scrollHeight;
+    terminal.scrollTop = terminal.scrollHeight;
   });
 }
