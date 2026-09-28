@@ -134,34 +134,21 @@ input:focus-visible {
   margin-left: 0;
 }
 
-.boot {
-  padding: 12px 0 4px;
-  min-width: 0;
+.transcript-block {
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
 }
 
-.wordmark {
-  margin: 0 0 8px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: clamp(30px, 3vw, 38px);
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  line-height: 1;
+.transcript-block + .transcript-block {
+  margin-top: 16px;
 }
 
-.wordmark-cursor {
-  display: inline-block;
-  margin-left: 0.07em;
-  color: var(--symbol);
-  font-family: var(--mono);
-  font-weight: 400;
-}
-
-.hero-tagline {
-  margin: 0;
-  font-size: clamp(14px, 1.4vw, 16px);
-  font-weight: 500;
-  line-height: 1.65;
+.transcript-block > .command-echo,
+.transcript-block > .response:first-child,
+.transcript-block > .notice:first-child {
+  margin-top: 0;
 }
 
 .directory-row {
@@ -209,17 +196,6 @@ input:focus-visible {
 
 .directory-file {
   color: var(--text);
-}
-
-.boot-compact {
-  padding: 0 0 8px;
-}
-
-.compact-message {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.7;
 }
 
 .command-echo {
@@ -491,7 +467,7 @@ a.content-title:hover {
 
 .command-form {
   width: min(760px, 100%);
-  margin-top: 16px;
+  margin: 16px auto 0;
   min-height: 68px;
   padding: 6px 12px;
   border: 1px solid var(--line);
@@ -593,15 +569,6 @@ a.content-title:hover {
   .terminal-output {
     padding: 12px 22px 40px;
   }
-
-  .boot {
-    padding: 12px 0 4px;
-  }
-
-  .wordmark {
-    font-size: clamp(30px, 5vw, 38px);
-  }
-
 }
 
 @media (max-width: 520px) {
@@ -609,12 +576,8 @@ a.content-title:hover {
     display: none;
   }
 
-  .wordmark {
-    font-size: 32px;
-  }
-
-  .hero-tagline {
-    font-size: 14px;
+  .transcript-block {
+    padding: 12px 14px 16px;
   }
 
   .directory-row {
@@ -665,18 +628,6 @@ a.content-title:hover {
 @media (max-width: 360px) {
   .terminal-output {
     padding-top: 10px;
-  }
-
-  .boot {
-    padding-top: 8px;
-  }
-
-  .wordmark {
-    font-size: 30px;
-  }
-
-  .hero-tagline {
-    font-size: 14px;
   }
 
   .directory-row {

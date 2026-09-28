@@ -27,6 +27,7 @@ const commands = ['help', 'ls', 'cd', 'cat', 'pwd', 'whoami', 'history', 'back',
 const promptClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 const commandHistory = [];
 let historyCursor = 0;
+let pendingBackBlock = null;
 let currentRoute = routeFromLocation();
 
 app.innerHTML = `
@@ -69,11 +70,9 @@ if (!history.state?.inxv) {
   history.replaceState({ inxv: true, index: 0 }, '', location.href);
 }
 
-renderBoot(currentRoute !== '');
-if (currentRoute) {
-  appendCommand(`cd /${currentRoute}`, '');
-  renderPage(currentRoute);
-}
+const initialBlock = appendBlock();
+if (currentRoute) appendCommand(initialBlock, `cd /${currentRoute}`, '');
+renderPage(initialBlock, currentRoute);
 updateShell();
 
 if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
@@ -115,10 +114,12 @@ input.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('popstate', () => {
+  const block = pendingBackBlock?.isConnected ? pendingBackBlock : appendBlock();
+  pendingBackBlock = null;
   currentRoute = routeFromLocation();
   updateShell();
-  appendNotice(`返回 ${displayPath(currentRoute)}`);
-  renderPage(currentRoute);
+  appendNotice(block, `返回 ${displayPath(currentRoute)}`);
+  renderPage(block, currentRoute);
   scrollToLatest();
 });
 
@@ -127,6 +128,12 @@ function element(tag, className, text) {
   if (className) created.className = className;
   if (text !== undefined) created.textContent = text;
   return created;
+}
+
+function appendBlock() {
+  const block = element('div', 'transcript-block');
+  output.append(block);
+  return block;
 }
 
 function commandButton(label, command, className = 'inline-command') {
@@ -159,19 +166,6 @@ function updateShell() {
   document.title = currentRoute ? `${pages.get(currentRoute).title} | inxv` : 'inxv | terminal';
 }
 
-function renderBoot(compact) {
-  const block = element('section', compact ? 'boot boot-compact' : 'boot');
-  if (compact) {
-    block.append(element('p', 'compact-message', siteContent.tagline));
-  } else {
-    const title = element('h1', 'wordmark', siteContent.name);
-    title.append(element('span', 'wordmark-cursor', '_'));
-    block.append(title, element('p', 'hero-tagline', siteContent.tagline));
-  }
-
-  output.append(block);
-}
-
 function directoryListing() {
   const list = element('div', 'directory-list');
   for (const directory of directories) {
@@ -183,7 +177,7 @@ function directoryListing() {
   return list;
 }
 
-function appendCommand(command, route) {
+function appendCommand(target, command, route) {
   const line = element('div', 'command-echo');
   const prompt = element('div', 'echo-prompt');
   prompt.append(element('span', 'prompt-time', promptClock.format(new Date())));
@@ -196,15 +190,15 @@ function appendCommand(command, route) {
   const echoLine = element('div', 'echo-line');
   echoLine.append(element('span', 'prompt-symbol', '%'), element('span', 'echo-command', command));
   line.append(prompt, echoLine);
-  output.append(line);
+  target.append(line);
 }
 
-function appendNotice(message, error = false) {
+function appendNotice(target, message, error = false) {
   const line = element('p', error ? 'notice notice-error' : 'notice', message);
-  output.append(line);
+  target.append(line);
 }
 
-function renderPage(route) {
+function renderPage(target, route) {
   const page = pages.get(route);
   const block = element('section', 'response page-response');
   const meta = element('div', 'response-meta');
@@ -237,7 +231,7 @@ function renderPage(route) {
   next.append(commandButton(route ? 'cd ..' : 'ls', route ? 'cd ..' : 'ls'));
   next.append(element('span', 'next-explanation', route ? '返回首页' : '查看目录'));
   block.append(next);
-  output.append(block);
+  target.append(block);
 }
 
 function detailRow(label, value) {
@@ -285,7 +279,7 @@ function externalUrl(value) {
   }
 }
 
-function renderHelp() {
+function renderHelp(target) {
   const block = element('section', 'response help-response');
   block.append(element('div', 'response-meta', '[ MANUAL / COMMANDS ]'));
   block.append(element('h2', 'page-title', '可用命令'));
@@ -315,10 +309,10 @@ function renderHelp() {
   examples.append(commandButton('cd links', 'cd links'));
   examples.append('。');
   block.append(examples);
-  output.append(block);
+  target.append(block);
 }
 
-function renderListing() {
+function renderListing(target) {
   const block = element('section', 'response listing-response');
   block.append(element('div', 'response-meta', `[ DIRECTORY /${currentRoute ? `${currentRoute}/` : ''} ]`));
   if (currentRoute) {
@@ -335,10 +329,10 @@ function renderListing() {
   } else {
     block.append(directoryListing());
   }
-  output.append(block);
+  target.append(block);
 }
 
-function renderHistory() {
+function renderHistory(target) {
   const block = element('section', 'response history-response');
   block.append(element('div', 'response-meta', '[ SESSION / HISTORY ]'));
   for (const [index, command] of commandHistory.entries()) {
@@ -347,7 +341,7 @@ function renderHistory() {
     row.append(element('span', '', command));
     block.append(row);
   }
-  output.append(block);
+  target.append(block);
 }
 
 function resolveRoute(argument) {
@@ -365,7 +359,8 @@ function executeCommand(raw) {
   const line = raw.trim();
   if (!line) return;
 
-  appendCommand(line, currentRoute);
+  const block = appendBlock();
+  appendCommand(block, line, currentRoute);
   commandHistory.push(line);
   historyCursor = commandHistory.length;
   input.value = '';
@@ -376,53 +371,54 @@ function executeCommand(raw) {
   switch (command.toLowerCase()) {
     case 'help':
     case '?':
-      renderHelp();
+      renderHelp(block);
       break;
     case 'ls':
-      renderListing();
+      renderListing(block);
       break;
     case 'cd': {
       const destination = resolveRoute(argument);
       if (destination === null) {
-        appendNotice(`cd: 找不到目录 ${argument}。输入 ls 查看可用目录。`, true);
+        appendNotice(block, `cd: 找不到目录 ${argument}。输入 ls 查看可用目录。`, true);
       } else if (destination === currentRoute) {
-        appendNotice(`已经在 ${displayPath(currentRoute)}。`);
+        appendNotice(block, `已经在 ${displayPath(currentRoute)}。`);
       } else {
         history.pushState({ inxv: true, index: (history.state?.index ?? 0) + 1 }, '', routeUrl(destination));
         currentRoute = destination;
         updateShell();
-        renderPage(destination);
+        renderPage(block, destination);
       }
       break;
     }
     case 'cat':
       if (!argument || ['README.md', './README.md'].includes(argument)) {
-        renderPage(currentRoute);
+        renderPage(block, currentRoute);
       } else {
-        appendNotice(`cat: 找不到文件 ${argument}。试试 cat README.md。`, true);
+        appendNotice(block, `cat: 找不到文件 ${argument}。试试 cat README.md。`, true);
       }
       break;
     case 'pwd':
-      appendNotice(currentRoute ? `/${currentRoute}` : '/');
+      appendNotice(block, currentRoute ? `/${currentRoute}` : '/');
       break;
     case 'whoami':
-      appendNotice('guest: 欢迎来到 inxv。');
+      appendNotice(block, 'guest: 欢迎来到 inxv。');
       break;
     case 'history':
-      renderHistory();
+      renderHistory(block);
       break;
     case 'back':
       if (history.state?.inxv && history.state.index > 0) {
+        pendingBackBlock = block;
         history.back();
       } else {
-        appendNotice('没有可返回的站内记录。试试 cd ..。', true);
+        appendNotice(block, '没有可返回的站内记录。试试 cd ..。', true);
       }
       break;
     case 'clear':
       output.replaceChildren();
       break;
     default:
-      appendNotice(`${command}: 未知命令。输入 help 查看可用命令。`, true);
+      appendNotice(block, `${command}: 未知命令。输入 help 查看可用命令。`, true);
   }
 
   promptTime.textContent = promptClock.format(new Date());
@@ -451,7 +447,12 @@ function completeCommand() {
     if (prefix.length > value.length) {
       input.value = prefix;
     } else {
-      appendNotice(matches.join('    '));
+      const suggestions = matches.join('    ');
+      const previous = output.lastElementChild;
+      if (previous?.classList.contains('completion-block') && previous.textContent === suggestions) return;
+      const block = appendBlock();
+      block.classList.add('completion-block');
+      appendNotice(block, suggestions);
       scrollToLatest();
     }
   }
