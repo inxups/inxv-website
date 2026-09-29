@@ -53,7 +53,6 @@ app.innerHTML = `
         <div class="command-line">
           <span class="prompt-symbol" aria-hidden="true">%</span>
           <input id="command-input" name="command" type="text" aria-label="输入终端命令" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" />
-          <button class="submit-button" type="submit" aria-label="执行命令">↵</button>
         </div>
       </form>
     </main>
