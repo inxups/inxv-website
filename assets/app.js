@@ -62,6 +62,7 @@ app.innerHTML = `
 
 const terminal = document.querySelector('#terminal-screen');
 const output = document.querySelector('#terminal-transcript');
+const commandForm = document.querySelector('#command-form');
 const input = document.querySelector('#command-input');
 const promptTime = document.querySelector('#prompt-time');
 const promptPath = document.querySelector('#prompt-path');
@@ -73,13 +74,14 @@ if (!history.state?.inxv) {
 const initialBlock = appendBlock();
 if (currentRoute) appendCommand(initialBlock, `cd /${currentRoute}`, '');
 renderPage(initialBlock, currentRoute);
+placeCommandForm(initialBlock);
 updateShell();
 
 if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
   input.focus({ preventScroll: true });
 }
 
-document.querySelector('#command-form').addEventListener('submit', (event) => {
+commandForm.addEventListener('submit', (event) => {
   event.preventDefault();
   executeCommand(input.value);
   input.focus({ preventScroll: true });
@@ -120,6 +122,7 @@ window.addEventListener('popstate', () => {
   updateShell();
   appendNotice(block, `返回 ${displayPath(currentRoute)}`);
   renderPage(block, currentRoute);
+  placeCommandForm(block);
   scrollToLatest();
 });
 
@@ -134,6 +137,15 @@ function appendBlock() {
   const block = element('div', 'transcript-block');
   output.append(block);
   return block;
+}
+
+function placeCommandForm(block) {
+  const homeListing = currentRoute === '' ? block.querySelector('.page-response > .directory-list') : null;
+  if (homeListing) {
+    homeListing.before(commandForm);
+  } else {
+    block.append(commandForm);
+  }
 }
 
 function commandButton(label, command, className = 'inline-command') {
@@ -207,7 +219,7 @@ function renderPage(target, route) {
   block.append(meta, element('h2', 'page-title', page.title));
 
   if (route === '') {
-    block.append(element('p', 'page-lead', '欢迎回到 inxv。所有页面都可以通过命令抵达。'));
+    block.append(element('p', 'page-lead', '输入 help 查看可用命令，或选择一个目录继续。'));
     block.append(directoryListing());
   } else if (route === 'about') {
     for (const paragraph of siteContent.about) {
@@ -226,11 +238,12 @@ function renderPage(target, route) {
     block.append(contentListing(siteContent.links, '友情链接正在整理中。'));
   }
 
-  const next = element('div', 'next-command');
-  next.append(element('span', 'next-label', 'NEXT →'));
-  next.append(commandButton(route ? 'cd ..' : 'ls', route ? 'cd ..' : 'ls'));
-  next.append(element('span', 'next-explanation', route ? '返回首页' : '查看目录'));
-  block.append(next);
+  if (route) {
+    const next = element('div', 'next-command');
+    next.append(commandButton('cd ..', 'cd ..'));
+    next.append(element('span', 'next-explanation', '返回首页'));
+    block.append(next);
+  }
   target.append(block);
 }
 
@@ -242,10 +255,7 @@ function detailRow(label, value) {
 
 function contentListing(items, emptyMessage) {
   if (!items.length) {
-    const empty = element('div', 'empty-state');
-    empty.append(element('span', 'empty-symbol', '[ ··· ]'));
-    empty.append(element('p', '', emptyMessage));
-    return empty;
+    return element('p', 'empty-state', emptyMessage);
   }
 
   const list = element('div', 'content-list');
@@ -415,12 +425,15 @@ function executeCommand(raw) {
       }
       break;
     case 'clear':
-      output.replaceChildren();
-      break;
+      output.replaceChildren(commandForm);
+      promptTime.textContent = promptClock.format(new Date());
+      scrollToLatest();
+      return;
     default:
       appendNotice(block, `${command}: 未知命令。输入 help 查看可用命令。`, true);
   }
 
+  placeCommandForm(block);
   promptTime.textContent = promptClock.format(new Date());
   scrollToLatest();
 }
@@ -449,10 +462,11 @@ function completeCommand() {
     } else {
       const suggestions = matches.join('    ');
       const previous = output.lastElementChild;
-      if (previous?.classList.contains('completion-block') && previous.textContent === suggestions) return;
+      if (previous?.classList.contains('completion-block') && previous.querySelector('.notice')?.textContent === suggestions) return;
       const block = appendBlock();
       block.classList.add('completion-block');
       appendNotice(block, suggestions);
+      placeCommandForm(block);
       scrollToLatest();
     }
   }
