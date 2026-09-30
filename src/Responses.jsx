@@ -90,7 +90,21 @@ function ProjectResponse({ page, onCommand }) {
           <div><dt>Fork</dt><dd>{project.forks ?? 0}</dd></div>
         </dl>
         <span className="project-kind">{project.isFork ? 'Fork 仓库' : '自建仓库'}</span>
-        {githubUrl && <a className="project-github" href={githubUrl} title={project.url} target="_blank" rel="noopener noreferrer">GitHub ↗</a>}
+        {githubUrl && (
+          <a
+            className="project-github"
+            href={githubUrl}
+            title={project.url}
+            aria-label={`在新标签页打开 ${project.title} 的 GitHub 仓库`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="project-github-label">GitHub</span>
+            <svg className="project-github-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" focusable="false">
+              <path d="M4 12 12 4M5 4h7v7" />
+            </svg>
+          </a>
+        )}
       </div>
       <section className="project-section project-release" aria-label="最新 Release">
         {project.release && releaseUrl ? (
