@@ -1,16 +1,24 @@
 # inxv
 
-一个无依赖的浅灰终端主题个人网站。打开首页即可输入命令，或选择「关于我」「项目」「友情链接」目录浏览各栏目。
+一个使用 React 构建的浅灰终端主题个人网站。打开首页即可输入命令，或选择「关于我」「项目」「友情链接」目录浏览各栏目。
 
 ## 本地预览
 
-在项目目录运行：
+先安装依赖并启动开发服务器：
 
 ```sh
-python3 -m http.server 8000
+npm install
+npm run dev
 ```
 
-然后打开 `http://localhost:8000/`。网站是纯静态文件，不需要安装依赖或执行构建。
+按终端提示打开本地地址。生产构建和预览：
+
+```sh
+npm run build
+npm run preview
+```
+
+运行 `npm test` 可检查命令和路由行为。
 
 ## 命令
 
@@ -38,7 +46,7 @@ python3 -m http.server 8000
 }
 ```
 
-部署时保留 `about/index.html`、`projects/index.html` 和 `links/index.html`，这样静态托管也能直接访问各栏目网址。
+部署时发布 `dist/` 的全部内容。构建结果包含 `about/index.html`、`projects/index.html` 和 `links/index.html`，静态托管可以直接访问和刷新各栏目网址。`assets/styles.css` 保留页面样式；终端组件与命令逻辑位于 `src/`。
 
 ## Codex 设计技能
 

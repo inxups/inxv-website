@@ -1,0 +1,232 @@
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Response } from './Responses.jsx';
+import {
+  applyCommand,
+  applyCompletion,
+  applyPopState,
+  createInitialState,
+  displayPath,
+  pages,
+  promptTime,
+  routeFromLocation,
+  routeUrl,
+  stepHistory,
+} from './terminal.js';
+
+function CommandPrompt({ route, time, draft, inputRef, onChange, onKeyDown, onSubmit }) {
+  return (
+    <form className="command-form" autoComplete="off" onSubmit={onSubmit}>
+      <label className="prompt" htmlFor="command-input">
+        <span className="prompt-time">{time}</span>
+        <span className="prompt-identity">
+          <span className="prompt-user">guest</span><span className="prompt-at">@</span><span className="prompt-host">inxv</span>
+        </span>
+        <span className="prompt-path">{displayPath(route)}</span>
+      </label>
+      <div className="command-line">
+        <span className="prompt-symbol" aria-hidden="true">%</span>
+        <input
+          ref={inputRef}
+          id="command-input"
+          name="command"
+          type="text"
+          value={draft}
+          onChange={onChange}
+          onKeyDown={onKeyDown}
+          aria-label="输入终端命令"
+          autoCapitalize="off"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="go"
+        />
+      </div>
+    </form>
+  );
+}
+
+function CommandEcho({ echo }) {
+  return (
+    <div className="command-echo">
+      <div className="echo-prompt">
+        <span className="prompt-time">{echo.time}</span>{' '}
+        <span className="prompt-user">guest</span><span className="prompt-at">@</span><span className="prompt-host">inxv</span>{' '}
+        <span className="prompt-path">{displayPath(echo.route)}</span>
+      </div>
+      <div className="echo-line">
+        <span className="prompt-symbol">%</span>
+        <span className="echo-command">{echo.command}</span>
+      </div>
+    </div>
+  );
+}
+
+const TranscriptBlock = memo(function TranscriptBlock({
+  block,
+  active,
+  route,
+  time,
+  draft,
+  inputRef,
+  onChange,
+  onKeyDown,
+  onSubmit,
+  onCommand,
+}) {
+  const prompt = active
+    ? <CommandPrompt route={route} time={time} draft={draft} inputRef={inputRef} onChange={onChange} onKeyDown={onKeyDown} onSubmit={onSubmit} />
+    : null;
+  const promptInsidePage = block.response?.type === 'page' && block.response.route === '';
+
+  return (
+    <div className={`transcript-block${block.response?.type === 'completion' ? ' completion-block' : ''}`}>
+      {block.echo && <CommandEcho echo={block.echo} />}
+      <Response response={block.response} prompt={promptInsidePage ? prompt : null} onCommand={onCommand} />
+      {active && !promptInsidePage && prompt}
+    </div>
+  );
+});
+
+export default function TerminalApp({ baseUrl }) {
+  const [view, setView] = useState(() => createInitialState(
+    routeFromLocation(window.location.pathname, baseUrl.pathname),
+    promptTime(),
+  ));
+  const viewRef = useRef(view);
+  const terminalRef = useRef(null);
+  const inputRef = useRef(null);
+  const focusAfterUpdate = useRef(false);
+
+  const commit = useCallback((nextView) => {
+    viewRef.current = nextView;
+    setView(nextView);
+  }, []);
+
+  const executeCommand = useCallback((raw, focusInput) => {
+    const line = raw.trim();
+    if (!line) return;
+
+    const canGoBack = window.history.state?.inxv && window.history.state.index > 0;
+    const { state, effect } = applyCommand(viewRef.current, line, promptTime(), canGoBack);
+
+    if (effect?.type === 'push') {
+      window.history.pushState(
+        { inxv: true, index: (window.history.state?.index ?? 0) + 1 },
+        '',
+        routeUrl(effect.route, baseUrl),
+      );
+    }
+
+    focusAfterUpdate.current = focusInput;
+    commit(state);
+
+    if (effect?.type === 'back') window.history.back();
+  }, [baseUrl, commit]);
+
+  const onCommand = useCallback((command) => {
+    executeCommand(command, window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+  }, [executeCommand]);
+
+  const onChange = useCallback((event) => {
+    commit({ ...viewRef.current, draft: event.target.value });
+  }, [commit]);
+
+  const onKeyDown = useCallback((event) => {
+    if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && viewRef.current.commandHistory.length) {
+      event.preventDefault();
+      const nextView = stepHistory(viewRef.current, event.key === 'ArrowUp' ? 'up' : 'down');
+      commit(nextView);
+      requestAnimationFrame(() => {
+        const input = inputRef.current;
+        input?.setSelectionRange(input.value.length, input.value.length);
+      });
+    } else if (event.key === 'Tab') {
+      event.preventDefault();
+      const previous = viewRef.current;
+      const nextView = applyCompletion(previous);
+      if (nextView !== previous) {
+        focusAfterUpdate.current = nextView.blocks.length !== previous.blocks.length;
+        commit(nextView);
+      }
+    } else if (event.key === 'Escape') {
+      commit({ ...viewRef.current, draft: '' });
+    }
+  }, [commit]);
+
+  const onSubmit = useCallback((event) => {
+    event.preventDefault();
+    executeCommand(viewRef.current.draft, true);
+  }, [executeCommand]);
+
+  useEffect(() => {
+    if (!window.history.state?.inxv) {
+      window.history.replaceState({ inxv: true, index: 0 }, '', window.location.href);
+    }
+
+    const onPopState = () => {
+      const route = routeFromLocation(window.location.pathname, baseUrl.pathname);
+      focusAfterUpdate.current = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      commit(applyPopState(viewRef.current, route, promptTime()));
+    };
+    window.addEventListener('popstate', onPopState);
+
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      inputRef.current?.focus({ preventScroll: true });
+    }
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [baseUrl, commit]);
+
+  useEffect(() => {
+    const page = pages.get(view.route);
+    document.title = view.route ? `${page.title} | inxv` : 'inxv | terminal';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', page.description);
+  }, [view.route]);
+
+  useLayoutEffect(() => {
+    if (terminalRef.current) terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    if (focusAfterUpdate.current) {
+      inputRef.current?.focus({ preventScroll: true });
+      focusAfterUpdate.current = false;
+    }
+  }, [view.scrollVersion]);
+
+  const lastId = view.blocks.at(-1)?.id;
+  const promptProps = {
+    route: view.route,
+    time: view.promptTime,
+    draft: view.draft,
+    inputRef,
+    onChange,
+    onKeyDown,
+    onSubmit,
+  };
+
+  return (
+    <div className="terminal-shell">
+      <header className="topbar">
+        <div className="brand" aria-label="inxv terminal">
+          <span className="brand-icon" aria-hidden="true">&gt;_</span>
+          <span className="brand-name">inxv</span>
+          <span className="brand-divider">/</span>
+          <span className="brand-detail">terminal</span>
+        </div>
+      </header>
+
+      <main ref={terminalRef} className="terminal-output" aria-label="终端">
+        <div className="terminal-transcript" role="log" aria-live="polite" aria-label="终端输出">
+          {view.blocks.map((block) => (
+            <TranscriptBlock
+              key={block.id}
+              block={block}
+              active={block.id === lastId}
+              {...promptProps}
+              onCommand={onCommand}
+            />
+          ))}
+          {!view.blocks.length && <CommandPrompt {...promptProps} />}
+        </div>
+      </main>
+    </div>
+  );
+}
