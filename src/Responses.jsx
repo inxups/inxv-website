@@ -15,11 +15,17 @@ function CommandButton({ label, command, className = 'inline-command', onCommand
   );
 }
 
-function DetailRow({ label, value }) {
+function DetailRow({ label, value, url }) {
+  const safeUrl = externalUrl(url);
+
   return (
     <div className="detail-row">
       <span className="detail-key">{label}</span>
-      <span className="detail-value">{value}</span>
+      <span className="detail-value">
+        {safeUrl
+          ? <a className="detail-link" href={safeUrl} target="_blank" rel="noopener noreferrer">{value}</a>
+          : value}
+      </span>
     </div>
   );
 }
@@ -76,6 +82,7 @@ function PageResponse({ route, onCommand }) {
           ))}
           <div className="detail-grid">
             <DetailRow label="NAME" value={siteContent.name} />
+            {siteContent.profiles.map((profile) => <DetailRow key={profile.label} {...profile} />)}
             <DetailRow label="SITE" value="个人终端" />
             <DetailRow label="STATUS" value="持续完善中" />
           </div>

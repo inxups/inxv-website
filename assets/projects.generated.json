@@ -1,0 +1,82 @@
+[
+  {
+    "title": "inxv-website",
+    "description": "inxv 的个人终端网站",
+    "url": "https://github.com/inxups/inxv-website"
+  },
+  {
+    "title": "inxv-0-llm",
+    "description": "",
+    "url": "https://github.com/inxups/inxv-0-llm"
+  },
+  {
+    "title": "route-recovery",
+    "description": "A skill for long horizon coding tasks, to improve the experience for non-top-tier models.",
+    "url": "https://github.com/inxups/route-recovery"
+  },
+  {
+    "title": "pi-inxv-web",
+    "description": "Web UI for the pi coding agent",
+    "url": "https://github.com/inxups/pi-inxv-web"
+  },
+  {
+    "title": "pi-web-tui-mode",
+    "description": "",
+    "url": "https://github.com/inxups/pi-web-tui-mode"
+  },
+  {
+    "title": "pi-ask-user",
+    "description": "",
+    "url": "https://github.com/inxups/pi-ask-user"
+  },
+  {
+    "title": "njts-cli",
+    "description": "",
+    "url": "https://github.com/inxups/njts-cli"
+  },
+  {
+    "title": "dsh-memento-tab",
+    "description": "Session-scoped memory tab for DeepSeek Harness — a companion plugin to dsh-memento.",
+    "url": "https://github.com/inxups/dsh-memento-tab"
+  },
+  {
+    "title": "dsh-user-plugins",
+    "description": "A dsh web GUI panel listing the plugins you installed into your dsh profiles — install spec, version, kind, and live loader phase.",
+    "url": "https://github.com/inxups/dsh-user-plugins"
+  },
+  {
+    "title": "mineGPT",
+    "description": "Client-only Minecraft 1.21.1 MCP bridge for ChatGPT Desktop",
+    "url": "https://github.com/inxups/mineGPT"
+  },
+  {
+    "title": "7x4k.github.io",
+    "description": "",
+    "url": "https://github.com/inxups/7x4k.github.io"
+  },
+  {
+    "title": "inf-x",
+    "description": "",
+    "url": "https://github.com/inxups/inf-x"
+  },
+  {
+    "title": "infx-reference",
+    "description": "",
+    "url": "https://github.com/inxups/infx-reference"
+  },
+  {
+    "title": "minecraft-agent-skills",
+    "description": "Minecraft AI agent skills and dual-target plugin bundle for Codex and Claude Code.",
+    "url": "https://github.com/inxups/minecraft-agent-skills"
+  },
+  {
+    "title": "astrbot_dynamicPersona",
+    "description": "",
+    "url": "https://github.com/inxups/astrbot_dynamicPersona"
+  },
+  {
+    "title": "claude-code",
+    "description": "🚀 Open source Claude Code CLI source code. Advanced AI Agent for developers. Includes TypeScript codebase for LLM tool-calling, agentic workflows, and terminal UI. Remember this is just the skeleton not the brain itself. Found by Chaofan Shou. ",
+    "url": "https://github.com/inxups/claude-code"
+  }
+]

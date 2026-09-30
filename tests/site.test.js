@@ -8,6 +8,7 @@ import { JSDOM } from 'jsdom';
 const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 const bundleName = (await readdir(join(dist, 'assets'))).find((name) => /^main-.*\.js$/.test(name));
 const bundle = await readFile(join(dist, 'assets', bundleName), 'utf8');
+const projects = JSON.parse(await readFile(new URL('../assets/projects.generated.json', import.meta.url), 'utf8'));
 
 async function waitFor(check) {
   const deadline = Date.now() + 2000;
@@ -91,6 +92,29 @@ test('directory commands update the URL, page, and browser history', async () =>
     await waitFor(() => document.querySelector('.command-form .prompt-path').textContent === '~');
     assert.equal(document.querySelectorAll('.page-title').length, 1);
     assert.equal(document.querySelector('.transcript-block:last-child .page-response'), null);
+    assert.equal(document.querySelectorAll('#command-input').length, 1);
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('projects render the generated snapshot with safe external links and optional descriptions', async () => {
+  const dom = await mount('/projects/');
+  try {
+    await typeCommand(dom, 'cat README.md');
+    const { document } = dom.window;
+    await waitFor(() => document.querySelector('.page-response'));
+    const rows = [...document.querySelectorAll('.content-row')];
+    assert.equal(rows.length, projects.length);
+    projects.forEach((project, index) => {
+      const link = rows[index].querySelector('.content-title');
+      assert.equal(link.textContent, project.title);
+      assert.equal(link.href, project.url);
+      assert.equal(link.target, '_blank');
+      assert.equal(link.rel, 'noopener noreferrer');
+      assert.equal(rows[index].querySelector('.content-description')?.textContent ?? '', project.description);
+      if (!project.description) assert.equal(rows[index].querySelector('.content-description'), null);
+    });
     assert.equal(document.querySelectorAll('#command-input').length, 1);
   } finally {
     dom.window.close();

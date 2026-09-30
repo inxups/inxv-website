@@ -400,7 +400,19 @@ a:focus-visible {
 }
 
 .detail-value {
+  min-width: 0;
   color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.detail-link {
+  color: inherit;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+
+.detail-link:hover {
+  text-decoration-color: currentColor;
 }
 
 .empty-state {
