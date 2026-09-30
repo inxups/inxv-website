@@ -16,10 +16,6 @@ export const helpRows = [
   ['ls', '列出当前位置的内容'],
   ['cd <目录>', '进入页面；支持 /、.. 和中文栏目名'],
   ['cat README.md', '阅读当前页面'],
-  ['pwd', '显示当前位置'],
-  ['whoami', '查看当前访客身份'],
-  ['history', '查看输入过的命令'],
-  ['back', '返回上一条站内浏览记录'],
   ['clear', '清空终端输出'],
 ];
 
@@ -34,7 +30,7 @@ const aliases = new Map([
   ['friends', 'links'],
 ]);
 
-const commands = ['help', 'ls', 'cd', 'cat', 'pwd', 'whoami', 'history', 'back', 'clear'];
+const commands = ['help', 'ls', 'cd', 'cat', 'clear'];
 const promptClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 export function promptTime(date = new Date()) {
@@ -77,13 +73,12 @@ function notice(message, error = false) {
   return { type: 'notice', message, error };
 }
 
-export function interpretCommand(line, route, commandHistory, canGoBack) {
+export function interpretCommand(line, route) {
   const [command, ...argumentsList] = line.split(/\s+/);
   const argument = argumentsList.join(' ');
 
   switch (command.toLowerCase()) {
     case 'help':
-    case '?':
       return { response: { type: 'help' } };
     case 'ls':
       return { response: { type: 'listing', route } };
@@ -101,16 +96,6 @@ export function interpretCommand(line, route, commandHistory, canGoBack) {
       return !argument || ['README.md', './README.md'].includes(argument)
         ? { response: { type: 'page', route } }
         : { response: notice(`cat: 找不到文件 ${argument}。试试 cat README.md。`, true) };
-    case 'pwd':
-      return { response: notice(route ? `/${route}` : '/') };
-    case 'whoami':
-      return { response: notice('guest: 欢迎来到 inxv。') };
-    case 'history':
-      return { response: { type: 'history', commands: commandHistory } };
-    case 'back':
-      return canGoBack
-        ? { response: null, back: true }
-        : { response: notice('没有可返回的站内记录。试试 cd ..。', true) };
     case 'clear':
       return { clear: true };
     default:
@@ -121,24 +106,19 @@ export function interpretCommand(line, route, commandHistory, canGoBack) {
 export function createInitialState(route, time) {
   return {
     route,
-    blocks: [{
-      id: 0,
-      echo: route ? { command: `cd /${route}`, route: '', time } : null,
-      response: { type: 'page', route },
-    }],
+    blocks: [],
     commandHistory: [],
     historyCursor: 0,
     draft: '',
     promptTime: time,
-    nextId: 1,
-    pendingBackId: null,
+    nextId: 0,
     scrollVersion: 0,
   };
 }
 
-export function applyCommand(state, line, time, canGoBack) {
+export function applyCommand(state, line, time) {
   const commandHistory = [...state.commandHistory, line];
-  const result = interpretCommand(line, state.route, commandHistory, canGoBack);
+  const result = interpretCommand(line, state.route);
   const block = {
     id: state.nextId,
     echo: { command: line, route: state.route, time },
@@ -155,30 +135,23 @@ export function applyCommand(state, line, time, canGoBack) {
       draft: '',
       promptTime: time,
       nextId: state.nextId + 1,
-      pendingBackId: result.back ? block.id : null,
       scrollVersion: state.scrollVersion + 1,
     },
     effect: result.destination !== undefined
       ? { type: 'push', route: result.destination }
-      : result.back ? { type: 'back' } : null,
+      : null,
   };
 }
 
 export function applyPopState(state, route, time) {
   const response = { type: 'page', route, notice: `返回 ${displayPath(route)}` };
-  const lastBlock = state.blocks.at(-1);
-  const finishBack = lastBlock && lastBlock.id === state.pendingBackId;
-  const blocks = finishBack
-    ? [...state.blocks.slice(0, -1), { ...lastBlock, response }]
-    : [...state.blocks, { id: state.nextId, echo: null, response }];
 
   return {
     ...state,
     route,
-    blocks,
+    blocks: [...state.blocks, { id: state.nextId, echo: null, response }],
     promptTime: time,
-    nextId: finishBack ? state.nextId : state.nextId + 1,
-    pendingBackId: null,
+    nextId: state.nextId + 1,
     scrollVersion: state.scrollVersion + 1,
   };
 }

@@ -15,19 +15,6 @@ function CommandButton({ label, command, className = 'inline-command', onCommand
   );
 }
 
-function DirectoryListing({ onCommand }) {
-  return (
-    <div className="directory-list">
-      {directories.map(({ route, description }) => (
-        <div className="directory-row" key={route}>
-          <CommandButton label={`${route}/`} command={`cd ${route}`} className="directory-command" onCommand={onCommand} />
-          <span className="directory-description">{description}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function DetailRow({ label, value }) {
   return (
     <div className="detail-row">
@@ -71,24 +58,16 @@ function ContentListing({ items, emptyMessage }) {
   );
 }
 
-function PageResponse({ route, prompt, onCommand }) {
+function PageResponse({ route, onCommand }) {
+  if (route === '') return null;
   const page = pages.get(route);
 
   return (
     <section className="response page-response">
       <div className="response-meta">
-        <span className="file-badge">FILE</span>
         <span className="file-path">{page.file}</span>
       </div>
       <h2 className="page-title">{page.title}</h2>
-
-      {route === '' && (
-        <>
-          <p className="page-lead">输入 help 查看可用命令，或选择一个目录继续。</p>
-          {prompt}
-          <DirectoryListing onCommand={onCommand} />
-        </>
-      )}
 
       {route === 'about' && (
         <>
@@ -117,12 +96,10 @@ function PageResponse({ route, prompt, onCommand }) {
         </>
       )}
 
-      {route !== '' && (
-        <div className="next-command">
-          <CommandButton label="cd .." command="cd .." onCommand={onCommand} />
-          <span className="next-explanation">返回首页</span>
-        </div>
-      )}
+      <div className="next-command">
+        <CommandButton label="cd .." command="cd .." onCommand={onCommand} />
+        <span className="next-explanation">返回首页</span>
+      </div>
     </section>
   );
 }
@@ -148,36 +125,24 @@ function HelpResponse({ onCommand }) {
   );
 }
 
-function ListingResponse({ route, onCommand }) {
+function ListingResponse({ route }) {
+  const entries = route
+    ? [
+      { name: '../', description: '上一级' },
+      { name: 'README.md', description: pages.get(route).title, file: true },
+    ]
+    : directories.map(({ route: directory, description }) => ({ name: `${directory}/`, description }));
+
   return (
     <section className="response listing-response">
-      <div className="response-meta">{`[ DIRECTORY /${route ? `${route}/` : ''} ]`}</div>
-      {route ? (
-        <div className="directory-list">
-          <div className="directory-row">
-            <CommandButton label="../" command="cd .." className="directory-command" onCommand={onCommand} />
-            <span className="directory-description">上一级</span>
-          </div>
-          <div className="directory-row">
-            <CommandButton label="README.md" command="cat README.md" className="directory-command directory-file" onCommand={onCommand} />
-            <span className="directory-description">{pages.get(route).title}</span>
-          </div>
-        </div>
-      ) : <DirectoryListing onCommand={onCommand} />}
-    </section>
-  );
-}
-
-function HistoryResponse({ commands }) {
-  return (
-    <section className="response history-response">
-      <div className="response-meta">[ SESSION / HISTORY ]</div>
-      {commands.map((command, index) => (
-        <div className="history-row" key={index}>
-          <span className="history-number">{String(index + 1).padStart(2, '0')}</span>
-          <span>{command}</span>
-        </div>
-      ))}
+      <ul className="listing-list" aria-label={`目录 /${route ? `${route}/` : ''}`}>
+        {entries.map(({ name, description, file }) => (
+          <li className="listing-row" key={name}>
+            <span className={`listing-name${file ? ' listing-file' : ''}`}>{name}</span>
+            <span className="listing-description">{description}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -186,7 +151,7 @@ function Notice({ message, error = false }) {
   return <p className={error ? 'notice notice-error' : 'notice'}>{message}</p>;
 }
 
-export function Response({ response, prompt, onCommand }) {
+export function Response({ response, onCommand }) {
   if (!response) return null;
 
   switch (response.type) {
@@ -194,15 +159,13 @@ export function Response({ response, prompt, onCommand }) {
       return (
         <>
           {response.notice && <Notice message={response.notice} />}
-          <PageResponse route={response.route} prompt={prompt} onCommand={onCommand} />
+          <PageResponse route={response.route} onCommand={onCommand} />
         </>
       );
     case 'help':
       return <HelpResponse onCommand={onCommand} />;
     case 'listing':
-      return <ListingResponse route={response.route} onCommand={onCommand} />;
-    case 'history':
-      return <HistoryResponse commands={response.commands} />;
+      return <ListingResponse route={response.route} />;
     case 'notice':
       return <Notice message={response.message} error={response.error} />;
     case 'completion':

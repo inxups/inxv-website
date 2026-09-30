@@ -5,6 +5,7 @@ import {
   applyCompletion,
   applyPopState,
   createInitialState,
+  directories,
   displayPath,
   pages,
   promptTime,
@@ -61,6 +62,63 @@ function CommandEcho({ echo }) {
   );
 }
 
+function FileExplorer({ route, onCommand }) {
+  return (
+    <aside className="file-explorer" aria-label="页面文件">
+      <nav className="file-tree" aria-label="页面目录">
+        <button
+          type="button"
+          className={`tree-root${route === '' ? ' is-current' : ''}`}
+          aria-label="返回根目录"
+          data-command="cd /"
+          onClick={() => onCommand('cd /')}
+        >
+          <span className="tree-root-mark" aria-hidden="true">~/</span>
+        </button>
+
+        <ul className="tree-directories">
+          {directories.map(({ route: pageRoute, description }) => {
+            const expanded = route === pageRoute;
+            const fileName = pages.get(pageRoute).file.split('/').at(-1);
+
+            return (
+              <li className="tree-directory-item" key={pageRoute}>
+                <button
+                  type="button"
+                  className={`tree-directory${expanded ? ' is-current' : ''}`}
+                  aria-label={`进入${description}目录`}
+                  aria-expanded={expanded}
+                  data-command={`cd ${pageRoute}`}
+                  onClick={() => onCommand(`cd ${pageRoute}`)}
+                >
+                  <span className="tree-chevron" aria-hidden="true">{expanded ? '▾' : '▸'}</span>
+                  <span className="tree-directory-name">{pageRoute}/</span>
+                </button>
+                {expanded && (
+                  <ul className="tree-files">
+                    <li>
+                      <button
+                        type="button"
+                        className="tree-file is-current"
+                        aria-current="page"
+                        data-command={`cat ${fileName}`}
+                        onClick={() => onCommand(`cat ${fileName}`)}
+                      >
+                        <span className="tree-file-mark" aria-hidden="true">md</span>
+                        {fileName}
+                      </button>
+                    </li>
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </aside>
+  );
+}
+
 const TranscriptBlock = memo(function TranscriptBlock({
   block,
   active,
@@ -76,20 +134,20 @@ const TranscriptBlock = memo(function TranscriptBlock({
   const prompt = active
     ? <CommandPrompt route={route} time={time} draft={draft} inputRef={inputRef} onChange={onChange} onKeyDown={onKeyDown} onSubmit={onSubmit} />
     : null;
-  const promptInsidePage = block.response?.type === 'page' && block.response.route === '';
 
   return (
     <div className={`transcript-block${block.response?.type === 'completion' ? ' completion-block' : ''}`}>
       {block.echo && <CommandEcho echo={block.echo} />}
-      <Response response={block.response} prompt={promptInsidePage ? prompt : null} onCommand={onCommand} />
-      {active && !promptInsidePage && prompt}
+      <Response response={block.response} onCommand={onCommand} />
+      {prompt}
     </div>
   );
 });
 
 export default function TerminalApp({ baseUrl }) {
+  const isReload = window.performance.getEntriesByType?.('navigation')?.[0]?.type === 'reload';
   const [view, setView] = useState(() => createInitialState(
-    routeFromLocation(window.location.pathname, baseUrl.pathname),
+    isReload ? '' : routeFromLocation(window.location.pathname, baseUrl.pathname),
     promptTime(),
   ));
   const viewRef = useRef(view);
@@ -106,8 +164,7 @@ export default function TerminalApp({ baseUrl }) {
     const line = raw.trim();
     if (!line) return;
 
-    const canGoBack = window.history.state?.inxv && window.history.state.index > 0;
-    const { state, effect } = applyCommand(viewRef.current, line, promptTime(), canGoBack);
+    const { state, effect } = applyCommand(viewRef.current, line, promptTime());
 
     if (effect?.type === 'push') {
       window.history.pushState(
@@ -119,8 +176,6 @@ export default function TerminalApp({ baseUrl }) {
 
     focusAfterUpdate.current = focusInput;
     commit(state);
-
-    if (effect?.type === 'back') window.history.back();
   }, [baseUrl, commit]);
 
   const onCommand = useCallback((command) => {
@@ -159,7 +214,13 @@ export default function TerminalApp({ baseUrl }) {
   }, [executeCommand]);
 
   useEffect(() => {
-    if (!window.history.state?.inxv) {
+    if (isReload) {
+      window.history.replaceState(
+        { inxv: true, index: 0 },
+        '',
+        `${routeUrl('', baseUrl)}${window.location.search}${window.location.hash}`,
+      );
+    } else if (!window.history.state?.inxv) {
       window.history.replaceState({ inxv: true, index: 0 }, '', window.location.href);
     }
 
@@ -175,7 +236,7 @@ export default function TerminalApp({ baseUrl }) {
     }
 
     return () => window.removeEventListener('popstate', onPopState);
-  }, [baseUrl, commit]);
+  }, [baseUrl, commit, isReload]);
 
   useEffect(() => {
     const page = pages.get(view.route);
@@ -224,9 +285,16 @@ export default function TerminalApp({ baseUrl }) {
               onCommand={onCommand}
             />
           ))}
-          {!view.blocks.length && <CommandPrompt {...promptProps} />}
+          {!view.blocks.length && (
+            <>
+              <CommandPrompt {...promptProps} />
+              {!view.commandHistory.length && !view.draft && <p className="command-hint">#试试help?</p>}
+            </>
+          )}
         </div>
       </main>
+
+      <FileExplorer route={view.route} onCommand={onCommand} />
     </div>
   );
 }
