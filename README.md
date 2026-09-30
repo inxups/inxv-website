@@ -57,12 +57,15 @@ npm run preview
 
 ```sh
 npm run sync:projects
+npm run sync:activity
 npm test
 ```
 
 同步脚本分页获取完整列表，以受限并发同步各仓库的 README 和最新正式 Release，再原子替换 `assets/projects.generated.json`。404 视为没有相应内容，其他错误优先保留该字段的已有内容；无法获取完整项目数据时回退到整个快照，没有可用数据则以失败退出，阻止发布。普通 `npm run build` 使用已保存的数据，不请求 GitHub，并为每个项目生成独立的静态 HTML 入口。生成文件无需手动编辑。
 
 README 和发布说明支持 GitHub 风格的 Markdown、表格、代码和图片，HTML 经清理后显示。相对文档链接指向仓库文件，相对图片链接指向原始文件，外部链接在新标签页打开。所有 GitHub 请求发生在构建前，访客无需调用 GitHub API。
+
+`projects/README.md` 总览还展示最近一年的 GitHub 贡献日历。`sync:activity` 读取 `inxups` 公开主页的贡献数据，将每日次数和 GitHub 颜色等级保存到 `assets/github-activity.generated.json`，随每次发布和每 6 小时的定时任务更新。同步失败或返回不完整日历时保留已有快照；没有可用快照则阻止发布。日历支持悬停、点击和方向键查看日期及次数，手机上可横向滑动，默认展示最近的日期。
 
 `.github/workflows/pages.yml` 在推送到 `main`、手动触发或每 6 小时时同步、测试并发布到 GitHub Pages。定时任务按 UTC 的 00:23、06:23、12:23、18:23 运行，对应北京时间 08:23、14:23、20:23、02:23，GitHub 可能延迟执行。需要立即更新时，在仓库 **Actions → Sync projects and deploy Pages → Run workflow** 手动触发。
 

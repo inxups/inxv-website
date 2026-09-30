@@ -36,15 +36,17 @@ jobs:
         run: npm run sync:projects
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Sync GitHub contribution activity
+        run: npm run sync:activity
       - name: Test and build
         run: npm test
-      - name: Save updated project data
+      - name: Save updated GitHub data
         run: |
-          if ! git diff --quiet -- assets/projects.generated.json; then
+          if ! git diff --quiet -- assets/projects.generated.json assets/github-activity.generated.json; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add assets/projects.generated.json
-            git commit -m 'Update public GitHub projects'
+            git add assets/projects.generated.json assets/github-activity.generated.json
+            git commit -m 'Update public GitHub data'
             git push origin HEAD:main
           fi
       - name: Upload website

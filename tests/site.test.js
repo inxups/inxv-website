@@ -9,6 +9,7 @@ const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 const bundleName = (await readdir(join(dist, 'assets'))).find((name) => /^main-.*\.js$/.test(name));
 const bundle = await readFile(join(dist, 'assets', bundleName), 'utf8');
 const projects = JSON.parse(await readFile(new URL('../assets/projects.generated.json', import.meta.url), 'utf8'));
+const activity = JSON.parse(await readFile(new URL('../assets/github-activity.generated.json', import.meta.url), 'utf8'));
 
 async function waitFor(check) {
   const deadline = Date.now() + 2000;
@@ -104,6 +105,17 @@ test('projects link to local detail pages with optional descriptions', async () 
     await typeCommand(dom, 'cat README.md');
     const { document } = dom.window;
     await waitFor(() => document.querySelector('.page-response'));
+    const calendar = document.querySelector('.activity-calendar');
+    assert.ok(calendar);
+    assert.equal(calendar.querySelectorAll('rect[data-date]').length, activity.days.length);
+    assert.equal(document.querySelector('.activity-total strong').textContent, activity.total.toLocaleString('zh-CN'));
+    assert.equal(document.querySelector('.activity-profile').href, 'https://github.com/inxups');
+    calendar.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+    await waitFor(() => document.querySelector('.activity-day-detail').textContent.includes(activity.days.at(-1).date));
+    calendar.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
+    await waitFor(() => document.querySelector('.activity-day-detail').textContent.includes(activity.days.at(-8).date));
+    calendar.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+    await waitFor(() => document.querySelector('.activity-day-detail').textContent.includes(activity.days[0].date));
     const rows = [...document.querySelectorAll('.content-row')];
     assert.equal(rows.length, projects.length);
     projects.forEach((project, index) => {

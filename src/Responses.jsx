@@ -1,6 +1,7 @@
 import { siteContent } from '../assets/content.js';
 import { directories, helpRows, pages, projects, projectRoute, routeUrl } from './terminal.js';
 import MarkdownContent from './MarkdownContent.js';
+import GitHubActivity from './GitHubActivity.jsx';
 
 function CommandButton({ label, command, className = 'inline-command', onCommand }) {
   return (
@@ -175,6 +176,7 @@ function PageResponse({ route, onCommand, baseUrl }) {
       {route === 'projects' && (
         <>
           <p className="page-lead">这里收集我做过或正在做的项目。</p>
+          <GitHubActivity />
           <ContentListing items={siteContent.projects} emptyMessage="项目档案正在整理中。" internal onCommand={onCommand} baseUrl={baseUrl} />
         </>
       )}

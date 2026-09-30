@@ -276,7 +276,7 @@ export default function TerminalApp({ baseUrl }) {
 
   useLayoutEffect(() => {
     if (terminalRef.current) {
-      const projectBlock = terminalRef.current.querySelector('.transcript-block:last-child .project-response');
+      const projectBlock = terminalRef.current.querySelector('.transcript-block:last-child .page-response:has(.github-activity), .transcript-block:last-child .project-response');
       terminalRef.current.scrollTop = projectBlock
         ? Math.max(0, projectBlock.offsetTop - terminalRef.current.offsetTop - 20)
         : terminalRef.current.scrollHeight;

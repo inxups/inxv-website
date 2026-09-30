@@ -798,6 +798,129 @@ a:focus-visible {
   padding: 8px 0;
 }
 
+.github-activity {
+  max-width: 760px;
+  margin: 22px 0 28px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--reading-surface);
+}
+
+.activity-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+
+.activity-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.activity-profile {
+  color: var(--path);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.activity-profile:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.activity-total {
+  margin: 8px 0 18px;
+  color: var(--muted);
+  font-family: var(--reading);
+  font-size: 13px;
+}
+
+.activity-total strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-scroll {
+  overflow-x: auto;
+  padding: 3px;
+  margin: -3px;
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+}
+
+.activity-calendar {
+  display: block;
+  width: 100%;
+  min-width: 660px;
+  height: auto;
+  overflow: visible;
+}
+
+.activity-calendar:focus {
+  outline: none;
+}
+
+.activity-calendar:focus-visible {
+  outline: 2px solid var(--path);
+  outline-offset: 1px;
+}
+
+.activity-month,
+.activity-weekday {
+  fill: var(--muted);
+  font-family: var(--reading);
+  font-size: 10px;
+}
+
+.activity-day {
+  stroke: #30384d12;
+  stroke-width: 0.5;
+}
+
+.activity-day.is-selected {
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.activity-level-0 { fill: #edf0f4; background: #edf0f4; }
+.activity-level-1 { fill: #b9e9bd; background: #b9e9bd; }
+.activity-level-2 { fill: #6bc477; background: #6bc477; }
+.activity-level-3 { fill: #439e51; background: #439e51; }
+.activity-level-4 { fill: #286b34; background: #286b34; }
+
+.activity-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.activity-day-detail {
+  min-height: 1.6em;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-legend {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.activity-swatch {
+  width: 10px;
+  height: 10px;
+  border: 1px solid #30384d12;
+  border-radius: 2px;
+}
+
 .content-number,
 .content-arrow {
   color: var(--faint);
@@ -1086,6 +1209,10 @@ a.content-title:hover {
 
   .project-readme {
     padding: 18px;
+  }
+
+  .github-activity {
+    padding: 16px;
   }
 
   .tree-directory,
