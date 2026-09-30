@@ -1,5 +1,6 @@
 import { siteContent } from '../assets/content.js';
-import { directories, helpRows, pages } from './terminal.js';
+import { directories, helpRows, pages, projects, projectRoute, routeUrl } from './terminal.js';
+import MarkdownContent from './MarkdownContent.js';
 
 function CommandButton({ label, command, className = 'inline-command', onCommand }) {
   return (
@@ -40,23 +41,33 @@ export function externalUrl(value) {
   }
 }
 
-function ContentListing({ items, emptyMessage }) {
+function ContentListing({ items, emptyMessage, internal = false, onCommand, baseUrl }) {
   if (!items.length) return <p className="empty-state">{emptyMessage}</p>;
 
   return (
     <div className="content-list">
       {items.map((item, index) => {
-        const safeUrl = externalUrl(item.url);
+        const safeUrl = internal ? routeUrl(projectRoute(item), baseUrl) : externalUrl(item.url);
         return (
           <article className="content-row" key={`${item.title}-${index}`}>
             <span className="content-number">{String(index + 1).padStart(2, '0')}</span>
             <div className="content-body">
               {safeUrl
-                ? <a className="content-title" href={safeUrl} target="_blank" rel="noopener noreferrer">{item.title}</a>
+                ? <a
+                  className="content-title"
+                  href={safeUrl}
+                  target={internal ? undefined : '_blank'}
+                  rel={internal ? undefined : 'noopener noreferrer'}
+                  onClick={internal ? (event) => {
+                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    onCommand(`cd /${projectRoute(item)}`);
+                  } : undefined}
+                >{item.title}</a>
                 : <span className="content-title">{item.title}</span>}
               {item.description && <p className="content-description">{item.description}</p>}
             </div>
-            {safeUrl && <span className="content-arrow" aria-hidden="true">↗</span>}
+            {safeUrl && <span className="content-arrow" aria-hidden="true">{internal ? '›' : '↗'}</span>}
           </article>
         );
       })}
@@ -64,9 +75,64 @@ function ContentListing({ items, emptyMessage }) {
   );
 }
 
-function PageResponse({ route, onCommand }) {
+function ProjectResponse({ page, onCommand }) {
+  const { project } = page;
+  const releaseUrl = externalUrl(project.release?.url);
+  return (
+    <section className="response page-response project-response">
+      <div className="response-meta"><span className="file-path">{page.file}</span></div>
+      <h2 className="page-title">{project.title}</h2>
+      {project.description && <p className="page-paragraph">{project.description}</p>}
+      <div className="detail-grid project-details">
+        <DetailRow label="STARS" value={String(project.stars ?? 0)} />
+        <DetailRow label="FORKS" value={String(project.forks ?? 0)} />
+        <DetailRow label="TYPE" value={project.isFork ? 'Fork 仓库' : '自建仓库'} />
+        <DetailRow label="GITHUB" value={`github.com/inxups/${project.title}`} url={project.url} />
+      </div>
+      <section className="project-section project-release" aria-label="最新 Release">
+        <h3 className="project-section-title">最新 Release</h3>
+        {project.release && releaseUrl ? (
+          <>
+            <div className="release-meta">
+              <a className="detail-link" href={releaseUrl} target="_blank" rel="noopener noreferrer">{project.release.name}</a>
+              <span>{project.release.tag}</span>
+              <time dateTime={project.release.publishedAt}>{project.release.publishedAt.slice(0, 10)}</time>
+            </div>
+            {project.release.assets.length > 0 && (
+              <ul className="release-assets">
+                {project.release.assets.map((asset) => {
+                  const url = externalUrl(asset.url);
+                  return url && <li key={asset.url}><a className="detail-link" href={url} target="_blank" rel="noopener noreferrer">{asset.name}</a></li>;
+                })}
+              </ul>
+            )}
+            {project.release.body && (
+              <details className="release-notes">
+                <summary>发布说明</summary>
+                <MarkdownContent content={project.release.body} project={project} section="release" />
+              </details>
+            )}
+          </>
+        ) : <p className="page-paragraph">暂无正式 Release。</p>}
+      </section>
+      <section className="project-section project-readme" aria-label="项目 README">
+        <h3 className="project-section-title">{project.readme?.path || 'README.md'}</h3>
+        {project.readme?.content
+          ? <MarkdownContent content={project.readme.content} project={project} />
+          : <p className="page-paragraph">该仓库暂无 README。</p>}
+      </section>
+      <div className="next-command">
+        <CommandButton label="cd .." command="cd .." onCommand={onCommand} />
+        <span className="next-explanation">返回项目列表</span>
+      </div>
+    </section>
+  );
+}
+
+function PageResponse({ route, onCommand, baseUrl }) {
   if (route === '') return null;
   const page = pages.get(route);
+  if (page.project) return <ProjectResponse page={page} onCommand={onCommand} />;
 
   return (
     <section className="response page-response">
@@ -92,7 +158,7 @@ function PageResponse({ route, onCommand }) {
       {route === 'projects' && (
         <>
           <p className="page-lead">这里收集我做过或正在做的项目。</p>
-          <ContentListing items={siteContent.projects} emptyMessage="项目档案正在整理中。" />
+          <ContentListing items={siteContent.projects} emptyMessage="项目档案正在整理中。" internal onCommand={onCommand} baseUrl={baseUrl} />
         </>
       )}
 
@@ -137,6 +203,7 @@ function ListingResponse({ route }) {
     ? [
       { name: '../', description: '上一级' },
       { name: 'README.md', description: pages.get(route).title, file: true },
+      ...(route === 'projects' ? projects.map((project) => ({ name: `${project.title}/`, description: '' })) : []),
     ]
     : directories.map(({ route: directory, description }) => ({ name: `${directory}/`, description }));
 
@@ -158,7 +225,7 @@ function Notice({ message, error = false }) {
   return <p className={error ? 'notice notice-error' : 'notice'}>{message}</p>;
 }
 
-export function Response({ response, onCommand }) {
+export function Response({ response, onCommand, baseUrl }) {
   if (!response) return null;
 
   switch (response.type) {
@@ -166,7 +233,7 @@ export function Response({ response, onCommand }) {
       return (
         <>
           {response.notice && <Notice message={response.notice} />}
-          <PageResponse route={response.route} onCommand={onCommand} />
+          <PageResponse route={response.route} onCommand={onCommand} baseUrl={baseUrl} />
         </>
       );
     case 'help':

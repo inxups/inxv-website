@@ -8,6 +8,8 @@ import {
   directories,
   displayPath,
   pages,
+  projects,
+  projectRoute,
   promptTime,
   routeFromLocation,
   routeUrl,
@@ -78,7 +80,7 @@ function FileExplorer({ route, onCommand }) {
 
         <ul className="tree-directories">
           {directories.map(({ route: pageRoute, description }) => {
-            const expanded = route === pageRoute;
+            const expanded = route === pageRoute || route.startsWith(`${pageRoute}/`);
             const fileName = pages.get(pageRoute).file.split('/').at(-1);
 
             return (
@@ -99,15 +101,30 @@ function FileExplorer({ route, onCommand }) {
                     <li>
                       <button
                         type="button"
-                        className="tree-file is-current"
-                        aria-current="page"
-                        data-command={`cat ${fileName}`}
-                        onClick={() => onCommand(`cat ${fileName}`)}
+                        className={`tree-file${route === pageRoute ? ' is-current' : ''}`}
+                        aria-current={route === pageRoute ? 'page' : undefined}
+                        data-command={route === pageRoute ? `cat ${fileName}` : `cd /${pageRoute}`}
+                        onClick={() => onCommand(route === pageRoute ? `cat ${fileName}` : `cd /${pageRoute}`)}
                       >
                         <span className="tree-file-mark" aria-hidden="true">md</span>
                         {fileName}
                       </button>
                     </li>
+                    {pageRoute === 'projects' && projects.map((project) => (
+                      <li key={project.title}>
+                        <button
+                          type="button"
+                          className={`tree-file tree-project${route === projectRoute(project) ? ' is-current' : ''}`}
+                          aria-current={route === projectRoute(project) ? 'page' : undefined}
+                          title={project.title}
+                          data-command={`cd /${projectRoute(project)}`}
+                          onClick={() => onCommand(`cd /${projectRoute(project)}`)}
+                        >
+                          <span className="tree-file-mark" aria-hidden="true">md</span>
+                          <span className="tree-file-name">{project.title}</span>
+                        </button>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </li>
@@ -130,6 +147,7 @@ const TranscriptBlock = memo(function TranscriptBlock({
   onKeyDown,
   onSubmit,
   onCommand,
+  baseUrl,
 }) {
   const prompt = active
     ? <CommandPrompt route={route} time={time} draft={draft} inputRef={inputRef} onChange={onChange} onKeyDown={onKeyDown} onSubmit={onSubmit} />
@@ -138,7 +156,7 @@ const TranscriptBlock = memo(function TranscriptBlock({
   return (
     <div className={`transcript-block${block.response?.type === 'completion' ? ' completion-block' : ''}`}>
       {block.echo && <CommandEcho echo={block.echo} />}
-      <Response response={block.response} onCommand={onCommand} />
+      <Response response={block.response} onCommand={onCommand} baseUrl={baseUrl} />
       {prompt}
     </div>
   );
@@ -245,7 +263,12 @@ export default function TerminalApp({ baseUrl }) {
   }, [view.route]);
 
   useLayoutEffect(() => {
-    if (terminalRef.current) terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    if (terminalRef.current) {
+      const projectBlock = terminalRef.current.querySelector('.transcript-block:last-child .project-response');
+      terminalRef.current.scrollTop = projectBlock
+        ? Math.max(0, projectBlock.offsetTop - terminalRef.current.offsetTop - 20)
+        : terminalRef.current.scrollHeight;
+    }
     if (focusAfterUpdate.current) {
       inputRef.current?.focus({ preventScroll: true });
       focusAfterUpdate.current = false;
@@ -283,6 +306,7 @@ export default function TerminalApp({ baseUrl }) {
               active={block.id === lastId}
               {...promptProps}
               onCommand={onCommand}
+              baseUrl={baseUrl}
             />
           ))}
           {!view.blocks.length && (

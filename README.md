@@ -49,7 +49,9 @@ npm run preview
 
 ## GitHub 项目同步与自动发布
 
-项目页自动展示 `inxups` 的全部公开仓库，包括 fork 和已归档仓库，按最近推送时间降序排列，同时间按仓库名排序。名称、简介和链接来自 GitHub；没有简介时不显示简介。
+项目页自动展示 `inxups` 的全部公开仓库，包括 fork 和已归档仓库，按最近推送时间降序排列，同时间按仓库名排序。项目名称进入本站 `/projects/仓库名/` 详情页，右侧 projects 目录也列出每个项目。详情包含 star、fork 数、是否为 fork、GitHub 链接、README，以及最新正式 Release 的日期、发布说明和下载链接；缺失 README 或 Release 时显示简短提示。
+
+在项目列表中可输入 `cd mineGPT`，也可从任意位置输入 `cd /projects/mineGPT`，`cat README.md` 阅读项目内容，`cd ..` 返回项目列表。支持项目名称补全、浏览器前进后退和直接打开详情网址；刷新时仍按全站约定回到根目录。
 
 本地更新项目数据：
 
@@ -58,7 +60,9 @@ npm run sync:projects
 npm test
 ```
 
-同步脚本分页获取完整列表，再原子替换 `assets/projects.generated.json`。普通 `npm run build` 使用已保存的数据，不请求 GitHub。同步失败时保留已有的有效数据并输出警告；没有可用数据时以失败退出，阻止发布。生成文件无需手动编辑。
+同步脚本分页获取完整列表，以受限并发同步各仓库的 README 和最新正式 Release，再原子替换 `assets/projects.generated.json`。404 视为没有相应内容，其他错误优先保留该字段的已有内容；无法获取完整项目数据时回退到整个快照，没有可用数据则以失败退出，阻止发布。普通 `npm run build` 使用已保存的数据，不请求 GitHub，并为每个项目生成独立的静态 HTML 入口。生成文件无需手动编辑。
+
+README 和发布说明支持 GitHub 风格的 Markdown、表格、代码和图片，HTML 经清理后显示。相对文档链接指向仓库文件，相对图片链接指向原始文件，外部链接在新标签页打开。所有 GitHub 请求发生在构建前，访客无需调用 GitHub API。
 
 `.github/workflows/pages.yml` 在推送到 `main`、手动触发或每 6 小时时同步、测试并发布到 GitHub Pages。定时任务按 UTC 的 00:23、06:23、12:23、18:23 运行，对应北京时间 08:23、14:23、20:23、02:23，GitHub 可能延迟执行。需要立即更新时，在仓库 **Actions → Sync projects and deploy Pages → Run workflow** 手动触发。
 

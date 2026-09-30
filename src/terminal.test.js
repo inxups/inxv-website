@@ -8,6 +8,9 @@ import {
   routeFromLocation,
   routeUrl,
   stepHistory,
+  projects,
+  projectRoute,
+  resolveRoute,
 } from './terminal.js';
 
 test('direct routes and generated URLs work under a deployment subpath', () => {
@@ -68,4 +71,26 @@ test('Tab completion expands a command and does not repeat identical suggestions
   state = applyCompletion(state);
   assert.equal(state.blocks.at(-1).response.type, 'completion');
   assert.equal(applyCompletion(state), state);
+});
+
+test('project commands resolve nested paths and return to their parent directory', () => {
+  const project = projects[0];
+  const route = projectRoute(project);
+  assert.equal(resolveRoute(project.title, 'projects'), route);
+  assert.equal(resolveRoute(`/${route}`, 'about'), route);
+  assert.equal(resolveRoute(route.toUpperCase(), ''), route);
+  assert.equal(resolveRoute('..', route), 'projects');
+  assert.equal(resolveRoute('../..', route), '');
+  assert.equal(resolveRoute('cd-does-not-exist', 'projects'), null);
+  assert.equal(routeFromLocation(`/site/${route}/index.html`, '/site/'), route);
+  assert.equal(routeUrl(route, new URL('https://example.com/site/')), `/site/${route}/`);
+  assert.equal(completeInput(`cd ${project.title}`, 'projects').value, `cd ${project.title}`);
+  let state = createInitialState(route, '10:00');
+  assert.equal(state.blocks[0].response.route, route);
+  const result = applyCommand(state, 'cd ..', '10:01');
+  assert.equal(result.state.route, 'projects');
+  assert.deepEqual(result.effect, { type: 'push', route: 'projects' });
+  state = applyCommand(createInitialState('projects', '10:00'), `cd ${project.title}`, '10:01').state;
+  assert.equal(state.route, route);
+  assert.deepEqual(applyCommand(state, 'cat README.md', '10:02').state.blocks.at(-1).response, { type: 'page', route });
 });

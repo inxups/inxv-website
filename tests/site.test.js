@@ -98,7 +98,7 @@ test('directory commands update the URL, page, and browser history', async () =>
   }
 });
 
-test('projects render the generated snapshot with safe external links and optional descriptions', async () => {
+test('projects link to local detail pages with optional descriptions', async () => {
   const dom = await mount('/projects/');
   try {
     await typeCommand(dom, 'cat README.md');
@@ -109,16 +109,73 @@ test('projects render the generated snapshot with safe external links and option
     projects.forEach((project, index) => {
       const link = rows[index].querySelector('.content-title');
       assert.equal(link.textContent, project.title);
-      assert.equal(link.href, project.url);
-      assert.equal(link.target, '_blank');
-      assert.equal(link.rel, 'noopener noreferrer');
+      assert.equal(link.href, `https://example.com/site/projects/${project.title}/`);
+      assert.equal(link.target, '');
       assert.equal(rows[index].querySelector('.content-description')?.textContent ?? '', project.description);
       if (!project.description) assert.equal(rows[index].querySelector('.content-description'), null);
     });
+    rows[0].querySelector('a').click();
+    await waitFor(() => document.querySelector('.project-response'));
+    assert.equal(dom.window.location.pathname, `/site/projects/${projects[0].title}/`);
+    assert.equal(document.querySelector('.project-response .page-title').textContent, projects[0].title);
+    assert.equal(document.querySelector('.tree-project.is-current .tree-file-name').textContent, projects[0].title);
     assert.equal(document.querySelectorAll('#command-input').length, 1);
   } finally {
     dom.window.close();
   }
+});
+
+test('every static project page opens its details with the correct deployment base', async () => {
+  for (const project of projects) {
+    const dom = await mount(`/projects/${project.title}/`);
+    try {
+      const { document } = dom.window;
+      const detail = document.querySelector('.project-response');
+      assert.ok(detail);
+      assert.equal(detail.querySelector('.page-title').textContent, project.title);
+      const values = [...detail.querySelectorAll('.detail-value')];
+      assert.equal(values[0].textContent, String(project.stars));
+      assert.equal(values[1].textContent, String(project.forks));
+      assert.equal(values[2].textContent, project.isFork ? 'Fork 仓库' : '自建仓库');
+      assert.equal(values[3].querySelector('a').href, project.url);
+      assert.equal(values[3].querySelector('a').target, '_blank');
+      assert.equal(document.querySelector('#app').dataset.base, '../../');
+      assert.equal(new URL(document.querySelector('script').getAttribute('src'), dom.window.location.href).pathname.startsWith('/site/assets/'), true);
+      assert.equal(document.querySelector('.tree-directory[data-command="cd projects"]').getAttribute('aria-expanded'), 'true');
+      assert.equal(document.querySelectorAll('.tree-project').length, projects.length);
+      if (project.readme?.content) assert.ok(detail.querySelector('.project-readme .markdown-content'));
+      else assert.match(detail.querySelector('.project-readme').textContent, /暂无 README/);
+      if (project.release) assert.equal(detail.querySelector('.release-meta a').href, project.release.url);
+      else assert.match(detail.querySelector('.project-release').textContent, /暂无正式 Release/);
+      assert.equal(document.querySelectorAll('#command-input').length, 1);
+      await typeCommand(dom, 'cd ..');
+      await waitFor(() => dom.window.location.pathname === '/site/projects/');
+      assert.equal(document.querySelector('.transcript-block:last-child .page-title').textContent, '项目');
+    } finally { dom.window.close(); }
+  }
+});
+
+test('project navigation supports history, sidebar navigation, and reload resets', async () => {
+  const dom = await mount();
+  let reloaded;
+  try {
+    const { document, history, location } = dom.window;
+    await typeCommand(dom, 'cd projects');
+    await waitFor(() => document.querySelector('.tree-project'));
+    document.querySelector('.tree-project').click();
+    await waitFor(() => document.querySelector('.project-response'));
+    assert.equal(location.pathname, `/site/projects/${projects[0].title}/`);
+    history.back();
+    await waitFor(() => location.pathname === '/site/projects/');
+    assert.equal(document.querySelector('.tree-project.is-current'), null);
+    history.forward();
+    await waitFor(() => location.pathname === `/site/projects/${projects[0].title}/`);
+    await waitFor(() => document.querySelector('.tree-project.is-current'));
+    reloaded = await mount(`/projects/${projects[0].title}/`, { navigationType: 'reload' });
+    await waitFor(() => reloaded.window.location.pathname === '/site/');
+    assert.equal(reloaded.window.document.querySelector('.project-response'), null);
+    assert.equal(reloaded.window.document.querySelector('.tree-project'), null);
+  } finally { dom.window.close(); reloaded?.window.close(); }
 });
 
 test('file explorer lists every page and expands the current page after commands', async () => {
@@ -221,7 +278,7 @@ test('typed commands update output and keep one usable prompt after clear', asyn
     await typeCommand(dom, 'ls');
     await waitFor(() => document.querySelectorAll('.listing-response').length === 2);
     const listing = document.querySelectorAll('.listing-response')[1];
-    assert.deepEqual([...listing.querySelectorAll('.listing-name')].map((row) => row.textContent), ['../', 'README.md']);
+    assert.deepEqual([...listing.querySelectorAll('.listing-name')].map((row) => row.textContent), ['../', 'README.md', ...projects.map((project) => `${project.title}/`)]);
     assert.equal(listing.querySelector('button, a, [data-command]'), null);
     listing.querySelector('.listing-name').click();
     assert.equal(dom.window.location.pathname, '/site/projects/');

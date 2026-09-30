@@ -1,8 +1,22 @@
+import projects from '../assets/projects.generated.json' with { type: 'json' };
+
+export { projects };
+
+export function projectRoute(project) {
+  return `projects/${project.title}`;
+}
+
 export const pages = new Map([
   ['', { title: '首页', file: '/README.md', description: 'inxv 的个人终端。通过命令或目录探索项目、友情链接和关于我。' }],
   ['about', { title: '关于我', file: '/about/README.md', description: '关于 inxv。' }],
   ['projects', { title: '项目', file: '/projects/README.md', description: 'inxv 的项目。' }],
   ['links', { title: '友情链接', file: '/links/README.md', description: 'inxv 的友情链接。' }],
+  ...projects.map((project) => [projectRoute(project), {
+    title: project.title,
+    file: `/${projectRoute(project)}/README.md`,
+    description: project.description || `${project.title} 项目。`,
+    project,
+  }]),
 ]);
 
 export const directories = [
@@ -48,25 +62,35 @@ export function routeFromLocation(pathname, basePath) {
     const relative = decodeURIComponent(pathname.slice(basePath.length))
       .replace(/index\.html$/i, '')
       .replace(/^\/+|\/+$/g, '');
-    return pages.has(relative) ? relative : '';
+    return canonicalRoute(relative) ?? '';
   } catch {
     return '';
   }
 }
 
 export function routeUrl(route, baseUrl) {
-  return new URL(route ? `${route}/` : './', baseUrl).pathname;
+  return new URL(route ? `${route.split('/').map(encodeURIComponent).join('/')}/` : './', baseUrl).pathname;
+}
+
+function canonicalRoute(route) {
+  return [...pages.keys()].find((candidate) => candidate.toLowerCase() === route.toLowerCase()) ?? null;
 }
 
 export function resolveRoute(argument, currentRoute) {
-  let target = argument.trim().toLowerCase();
+  let target = argument.trim();
   if (!target || target === '/' || target === '~') return '';
   if (target === '.' || target === './') return currentRoute;
-  if (target === '..' || target === '../') return '';
-
-  target = target.replace(/^(~\/|\.\.\/|\.\/|\/)/, '').replace(/\/+$/, '');
-  target = aliases.get(target) ?? target;
-  return pages.has(target) ? target : null;
+  const absolute = /^(~\/|\/)/.test(target);
+  target = target.replace(/^(~\/|\/)/, '').replace(/\/+$/, '');
+  const alias = aliases.get(target.toLowerCase());
+  if (alias !== undefined) return alias;
+  if (!target.startsWith('.') && canonicalRoute(target) !== null) return canonicalRoute(target);
+  const segments = absolute ? [] : currentRoute.split('/').filter(Boolean);
+  for (const segment of target.split('/')) {
+    if (segment === '..') segments.pop();
+    else if (segment && segment !== '.') segments.push(segment);
+  }
+  return canonicalRoute(segments.join('/'));
 }
 
 function notice(message, error = false) {
@@ -104,14 +128,15 @@ export function interpretCommand(line, route) {
 }
 
 export function createInitialState(route, time) {
+  const showProject = Boolean(pages.get(route)?.project);
   return {
     route,
-    blocks: [],
+    blocks: showProject ? [{ id: 0, echo: null, response: { type: 'page', route } }] : [],
     commandHistory: [],
     historyCursor: 0,
     draft: '',
     promptTime: time,
-    nextId: 0,
+    nextId: showProject ? 1 : 0,
     scrollVersion: 0,
   };
 }
@@ -168,10 +193,11 @@ export function stepHistory(state, direction) {
   };
 }
 
-export function completeInput(raw) {
+export function completeInput(raw, route = '') {
   const value = raw.toLowerCase();
   const candidates = value.startsWith('cd ')
-    ? ['cd about', 'cd projects', 'cd links', 'cd ..', 'cd /', 'cd ~']
+    ? ['cd about', 'cd projects', 'cd links', 'cd ..', 'cd /', 'cd ~',
+      ...projects.map((project) => `cd ${route === 'projects' ? project.title : projectRoute(project)}`)]
     : value.startsWith('cat ')
       ? ['cat README.md']
       : commands;
@@ -192,7 +218,7 @@ export function completeInput(raw) {
 }
 
 export function applyCompletion(state) {
-  const { value, suggestions } = completeInput(state.draft);
+  const { value, suggestions } = completeInput(state.draft, state.route);
   if (!suggestions) return value === state.draft ? state : { ...state, draft: value };
 
   const lastResponse = state.blocks.at(-1)?.response;
