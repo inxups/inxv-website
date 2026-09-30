@@ -10,5 +10,7 @@ export const siteContent = {
     { label: 'BILIBILI', value: 'space.bilibili.com/3707036879555251', url: 'https://space.bilibili.com/3707036879555251' },
   ],
   projects,
-  links: [],
+  links: [
+    { title: 'F-API Hub', url: 'https://www.f-api.site' },
+  ],
 };
