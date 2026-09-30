@@ -78,24 +78,27 @@ function ContentListing({ items, emptyMessage, internal = false, onCommand, base
 function ProjectResponse({ page, onCommand }) {
   const { project } = page;
   const releaseUrl = externalUrl(project.release?.url);
+  const githubUrl = externalUrl(project.url);
   return (
     <section className="response page-response project-response">
       <div className="response-meta"><span className="file-path">{page.file}</span></div>
       <h2 className="page-title">{project.title}</h2>
-      {project.description && <p className="page-paragraph">{project.description}</p>}
-      <div className="detail-grid project-details">
-        <DetailRow label="STARS" value={String(project.stars ?? 0)} />
-        <DetailRow label="FORKS" value={String(project.forks ?? 0)} />
-        <DetailRow label="TYPE" value={project.isFork ? 'Fork 仓库' : '自建仓库'} />
-        <DetailRow label="GITHUB" value={`github.com/inxups/${project.title}`} url={project.url} />
+      {project.description && <p className="page-paragraph project-description">{project.description}</p>}
+      <div className="project-summary-meta">
+        <dl className="project-stats" aria-label="仓库统计">
+          <div><dt>Star</dt><dd>{project.stars ?? 0}</dd></div>
+          <div><dt>Fork</dt><dd>{project.forks ?? 0}</dd></div>
+        </dl>
+        <span className="project-kind">{project.isFork ? 'Fork 仓库' : '自建仓库'}</span>
+        {githubUrl && <a className="project-github" href={githubUrl} title={project.url} target="_blank" rel="noopener noreferrer">GitHub ↗</a>}
       </div>
       <section className="project-section project-release" aria-label="最新 Release">
-        <h3 className="project-section-title">最新 Release</h3>
         {project.release && releaseUrl ? (
           <>
             <div className="release-meta">
+              <h3 className="project-section-title">最新 Release</h3>
               <a className="detail-link" href={releaseUrl} target="_blank" rel="noopener noreferrer">{project.release.name}</a>
-              <span>{project.release.tag}</span>
+              {project.release.name !== project.release.tag && <span>{project.release.tag}</span>}
               <time dateTime={project.release.publishedAt}>{project.release.publishedAt.slice(0, 10)}</time>
             </div>
             {project.release.assets.length > 0 && (
@@ -113,7 +116,7 @@ function ProjectResponse({ page, onCommand }) {
               </details>
             )}
           </>
-        ) : <p className="page-paragraph">暂无正式 Release。</p>}
+        ) : <p className="release-empty"><span>最新 Release</span>暂无正式 Release。</p>}
       </section>
       <section className="project-section project-readme" aria-label="项目 README">
         <h3 className="project-section-title">{project.readme?.path || 'README.md'}</h3>

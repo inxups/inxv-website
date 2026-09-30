@@ -65,8 +65,20 @@ function CommandEcho({ echo }) {
 }
 
 function FileExplorer({ route, onCommand }) {
+  const explorerRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const explorer = explorerRef.current;
+    const current = explorer?.querySelector('.tree-file[aria-current="page"]');
+    if (!current) return;
+    const visible = explorer.getBoundingClientRect();
+    const selected = current.getBoundingClientRect();
+    if (selected.top < visible.top) explorer.scrollTop -= visible.top - selected.top;
+    else if (selected.bottom > visible.bottom) explorer.scrollTop += selected.bottom - visible.bottom;
+  }, [route]);
+
   return (
-    <aside className="file-explorer" aria-label="页面文件">
+    <aside ref={explorerRef} className="file-explorer" aria-label="页面文件">
       <nav className="file-tree" aria-label="页面目录">
         <button
           type="button"
@@ -87,7 +99,7 @@ function FileExplorer({ route, onCommand }) {
               <li className="tree-directory-item" key={pageRoute}>
                 <button
                   type="button"
-                  className={`tree-directory${expanded ? ' is-current' : ''}`}
+                  className={`tree-directory${route === pageRoute ? ' is-current' : ''}`}
                   aria-label={`进入${description}目录`}
                   aria-expanded={expanded}
                   data-command={`cd ${pageRoute}`}

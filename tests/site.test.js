@@ -133,20 +133,25 @@ test('every static project page opens its details with the correct deployment ba
       const detail = document.querySelector('.project-response');
       assert.ok(detail);
       assert.equal(detail.querySelector('.page-title').textContent, project.title);
-      const values = [...detail.querySelectorAll('.detail-value')];
+      const values = [...detail.querySelectorAll('.project-stats dd')];
       assert.equal(values[0].textContent, String(project.stars));
       assert.equal(values[1].textContent, String(project.forks));
-      assert.equal(values[2].textContent, project.isFork ? 'Fork 仓库' : '自建仓库');
-      assert.equal(values[3].querySelector('a').href, project.url);
-      assert.equal(values[3].querySelector('a').target, '_blank');
+      assert.equal(detail.querySelector('.project-kind').textContent, project.isFork ? 'Fork 仓库' : '自建仓库');
+      assert.equal(detail.querySelector('.project-github').href, project.url);
+      assert.equal(detail.querySelector('.project-github').target, '_blank');
+      assert.equal(detail.querySelector('.project-github').rel, 'noopener noreferrer');
       assert.equal(document.querySelector('#app').dataset.base, '../../');
       assert.equal(new URL(document.querySelector('script').getAttribute('src'), dom.window.location.href).pathname.startsWith('/site/assets/'), true);
       assert.equal(document.querySelector('.tree-directory[data-command="cd projects"]').getAttribute('aria-expanded'), 'true');
+      assert.equal(document.querySelector('.tree-directory[data-command="cd projects"]').classList.contains('is-current'), false);
       assert.equal(document.querySelectorAll('.tree-project').length, projects.length);
       if (project.readme?.content) assert.ok(detail.querySelector('.project-readme .markdown-content'));
       else assert.match(detail.querySelector('.project-readme').textContent, /暂无 README/);
       if (project.release) assert.equal(detail.querySelector('.release-meta a').href, project.release.url);
-      else assert.match(detail.querySelector('.project-release').textContent, /暂无正式 Release/);
+      else {
+        assert.match(detail.querySelector('.release-empty').textContent, /暂无正式 Release/);
+        assert.equal(detail.querySelector('.project-release h3'), null);
+      }
       assert.equal(document.querySelectorAll('#command-input').length, 1);
       await typeCommand(dom, 'cd ..');
       await waitFor(() => dom.window.location.pathname === '/site/projects/');
