@@ -413,8 +413,9 @@ a:focus-visible {
   text-decoration-color: currentColor;
 }
 
+.projects-response,
 .project-response {
-  max-width: 720px;
+  max-width: none;
 }
 
 .project-response .file-path {
@@ -778,7 +779,6 @@ a:focus-visible {
 }
 
 .github-activity {
-  max-width: 760px;
   margin: 22px 0 28px;
   padding: 20px;
   border: 1px solid var(--line);

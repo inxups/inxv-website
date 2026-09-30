@@ -153,7 +153,7 @@ function PageResponse({ route, onCommand, baseUrl }) {
   if (page.project) return <ProjectResponse page={page} onCommand={onCommand} />;
 
   return (
-    <section className="response page-response">
+    <section className={`response page-response${route === 'projects' ? ' projects-response' : ''}`}>
       <div className="response-meta">
         <span className="file-path">{page.file}</span>
       </div>
