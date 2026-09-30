@@ -175,17 +175,13 @@ function PageResponse({ route, onCommand, baseUrl }) {
 
       {route === 'projects' && (
         <>
-          <p className="page-lead">这里收集我做过或正在做的项目。</p>
           <GitHubActivity />
           <ContentListing items={siteContent.projects} emptyMessage="项目档案正在整理中。" internal onCommand={onCommand} baseUrl={baseUrl} />
         </>
       )}
 
       {route === 'links' && (
-        <>
-          <p className="page-lead">一些值得访问的网站，会在这里相遇。</p>
-          <ContentListing items={siteContent.links} emptyMessage="友情链接正在整理中。" />
-        </>
+        <ContentListing items={siteContent.links} emptyMessage="友情链接正在整理中。" />
       )}
 
       <div className="next-command">
@@ -199,7 +195,6 @@ function PageResponse({ route, onCommand, baseUrl }) {
 function HelpResponse({ onCommand }) {
   return (
     <section className="response help-response">
-      <div className="response-meta">[ MANUAL / COMMANDS ]</div>
       <h2 className="page-title">可用命令</h2>
       <div className="help-table">
         {helpRows.map(([command, description]) => (
