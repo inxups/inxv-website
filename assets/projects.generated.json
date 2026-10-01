@@ -16,17 +16,6 @@
     "release": null
   },
   {
-    "title": "inxv-0-llm",
-    "description": "",
-    "url": "https://github.com/inxups/inxv-0-llm",
-    "stars": 0,
-    "forks": 0,
-    "isFork": false,
-    "defaultBranch": "main",
-    "readme": null,
-    "release": null
-  },
-  {
     "title": "route-recovery",
     "description": "A skill for long horizon coding tasks, to improve the experience for non-top-tier models.",
     "url": "https://github.com/inxups/route-recovery",
