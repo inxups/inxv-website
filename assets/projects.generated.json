@@ -1,5 +1,54 @@
 [
   {
+    "title": "style-cli",
+    "description": "",
+    "url": "https://github.com/inxups/style-cli",
+    "stars": 0,
+    "forks": 0,
+    "isFork": false,
+    "defaultBranch": "main",
+    "readme": {
+      "content": "hello harness\n",
+      "path": "README.md",
+      "url": "https://github.com/inxups/style-cli/blob/main/README.md",
+      "downloadUrl": "https://raw.githubusercontent.com/inxups/style-cli/main/README.md"
+    },
+    "release": null
+  },
+  {
+    "title": "style-bench",
+    "description": "",
+    "url": "https://github.com/inxups/style-bench",
+    "stars": 0,
+    "forks": 0,
+    "isFork": false,
+    "defaultBranch": "main",
+    "readme": null,
+    "release": null
+  },
+  {
+    "title": "style-website",
+    "description": "",
+    "url": "https://github.com/inxups/style-website",
+    "stars": 0,
+    "forks": 0,
+    "isFork": false,
+    "defaultBranch": "main",
+    "readme": null,
+    "release": null
+  },
+  {
+    "title": "inxv-styles",
+    "description": "",
+    "url": "https://github.com/inxups/inxv-styles",
+    "stars": 0,
+    "forks": 0,
+    "isFork": false,
+    "defaultBranch": "main",
+    "readme": null,
+    "release": null
+  },
+  {
     "title": "inxv-website",
     "description": "inxv 的个人终端网站",
     "url": "https://github.com/inxups/inxv-website",
@@ -16,9 +65,9 @@
     "release": null
   },
   {
-    "title": "route-recovery",
+    "title": "inxv-skills",
     "description": "A skill for long horizon coding tasks, to improve the experience for non-top-tier models.",
-    "url": "https://github.com/inxups/route-recovery",
+    "url": "https://github.com/inxups/inxv-skills",
     "stars": 0,
     "forks": 0,
     "isFork": false,
