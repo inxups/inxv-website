@@ -8,11 +8,22 @@
     "isFork": false,
     "defaultBranch": "main",
     "readme": {
-      "content": "hello harness\n",
+      "content": "# STYLE\n\nSTYLE manages rules and native hooks for registered coding harnesses.\n\nOrdinary `rules` describe behavior compiled by STYLE. Native commands are declared\nseparately, inline in the top-level `native_hooks` list in `STYLE.yaml`:\n\n```yaml\nspec: style/v0.3\nname: example\nversion: 1.0.0\ndescription: Example package\n\nrules:\n  - id: shell-reminder\n    target: tool\n    tool: shell\n    at: before\n    text: 执行命令前检查风险。\n\nnative_hooks:\n  - id: command-check\n    description: 使用本地脚本检查命令。\n    fallback: skip\n    claude-code:\n      event: PreToolUse\n      matcher: Bash\n      command: /absolute/path/check-command.sh\n      timeout: 10\n```\n\nA directory package may contain rules, hooks, or both. IDs must be unique across\nboth lists. Hooks accept `id`, `description`, `enabled`, `priority`, `fallback`,\nand registered harness mappings. Each mapping accepts only `event`, `matcher`,\n`command`, and `timeout`. Hooks default to enabled, priority 50 (or the package\npriority), and `fallback: skip`; `fallback: error` blocks installation when a\nmapping cannot be installed. A missing harness mapping is always skipped.\nOrdinary rule `defaults` do not apply to hooks. Single-file `.style.md` packages\nonly support ordinary rules.\n\nSTYLE manages hook approval, installation, checks, sync, update and removal.\nHarnesses execute native commands; hooks do not enter STYLE's rule engine,\ntemplates, deduplication, runtime statistics or token budgets. `description` is\nplain explanatory text. Development links require renewed approval when their\nexecutable hook declarations change; editing only `description` does not require\nexecution approval. The ordinary rule plan status `native` still means the\nharness supports that rule directly.\n\n`target: native` has been removed without a compatibility entry point. To migrate\nan existing installation:\n\n1. Move each declaration into `STYLE.yaml` under `native_hooks`, remove `target`,\n   and move any Markdown notes into `description`.\n2. Run `style uninstall PACKAGE --yes` in the original scope. If remaining old\n   packages prevent rebuilding, use `style uninstall --all --yes`.\n3. Reinstall the migrated sources with `style install SOURCE --yes` and the same\n   harness, route and project options; review the disclosed native commands.\n\nOld installed source or approval snapshots produce `native-format-removed` and\nrequire reinstalling. `list` and `doctor` keep those packages visible. This change\ncontinues to use `style/v0.3`; there is no migration command.\n",
       "path": "README.md",
       "url": "https://github.com/inxups/style-cli/blob/main/README.md",
       "downloadUrl": "https://raw.githubusercontent.com/inxups/style-cli/main/README.md"
     },
+    "release": null
+  },
+  {
+    "title": "style-website",
+    "description": "",
+    "url": "https://github.com/inxups/style-website",
+    "stars": 0,
+    "forks": 0,
+    "isFork": false,
+    "defaultBranch": "main",
+    "readme": null,
     "release": null
   },
   {
@@ -29,17 +40,6 @@
       "url": "https://github.com/inxups/inxv-website/blob/main/README.md",
       "downloadUrl": "https://raw.githubusercontent.com/inxups/inxv-website/main/README.md"
     },
-    "release": null
-  },
-  {
-    "title": "style-website",
-    "description": "",
-    "url": "https://github.com/inxups/style-website",
-    "stars": 0,
-    "forks": 0,
-    "isFork": false,
-    "defaultBranch": "main",
-    "readme": null,
     "release": null
   },
   {
