@@ -1,6 +1,6 @@
 {
   "username": "inxups",
-  "total": 975,
+  "total": 977,
   "days": [
     {
       "date": "2025-10-19",
@@ -1835,6 +1835,11 @@
     {
       "date": "2026-10-20",
       "count": 3,
+      "level": 1
+    },
+    {
+      "date": "2026-10-21",
+      "count": 2,
       "level": 1
     }
   ]
