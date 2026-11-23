@@ -1,5 +1,16 @@
 [
   {
+    "title": "go-proc-runner",
+    "description": "learn go...",
+    "url": "https://github.com/inxups/go-proc-runner",
+    "stars": 0,
+    "forks": 0,
+    "isFork": false,
+    "defaultBranch": "main",
+    "readme": null,
+    "release": null
+  },
+  {
     "title": "inxv-website",
     "description": "inxv 的个人终端网站",
     "url": "https://github.com/inxups/inxv-website",
